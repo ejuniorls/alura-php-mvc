@@ -28,12 +28,18 @@ class Exclusao implements InterfaceControladorRequisicao
 
         if (is_null($id) || $id === false) {
             header('Location: /listar-cursos');
+            $_SESSION['tipo_mensagem'] = "warning";
+            $_SESSION['mensagem'] = "Curso não localizado";
             return;
+            header('Location: /listar-cursos');
         }
 
         $curso = $this->entityManager->getReference(Curso::class, $id);
         $this->entityManager->remove($curso);
         $this->entityManager->flush();
+        $_SESSION['tipo_mensagem'] = "success";
+        $_SESSION['mensagem'] = "Curso removido";
+
         header('Location: /listar-cursos');
     }
 }
