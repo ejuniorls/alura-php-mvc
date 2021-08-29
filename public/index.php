@@ -2,10 +2,10 @@
 
 require __DIR__ . '/../vendor/autoload.php';
 
-use Alura\Cursos\Controller\FormularioInsercao;
-use Alura\Cursos\Controller\InterfaceControladorRequisicao;
-use Alura\Cursos\Controller\ListarCursos;
-use Alura\Cursos\Controller\Persistencia;
+use Nyholm\Psr7\Factory\Psr17Factory;
+use Nyholm\Psr7Server\ServerRequestCreator;
+use Psr\Container\ContainerInterface;
+use Psr\Http\Server\RequestHandlerInterface;
 
 $caminho = $_SERVER['PATH_INFO'];
 $rotas = require __DIR__ . '/../config/routes.php';
@@ -23,7 +23,29 @@ if (!isset($_SESSION['logado']) && $ehRotaLogin === false) {
     exit();
 }
 
+$psr17Factory = new Psr17Factory();
+
+$creator = new ServerRequestCreator(
+    $psr17Factory, // ServerRequestFactory
+    $psr17Factory, // UriFactory
+    $psr17Factory, // UploadedFileFactory
+    $psr17Factory  // StreamFactory
+);
+
+$request = $creator->fromGlobals();
+
 $classeControladora = $rotas[$caminho];
-/** @var InterfaceControladorRequisicao $controlador */
-$controlador = new $classeControladora();
-$controlador->processaRequisicao();
+/** @var ContainerInterface $container */
+$container = require __DIR__ . '/../config/dependencies.php';
+/** @var RequestHandlerInterface $controlador */
+$controlador = $container->get($classeControladora);
+
+$response = $controlador->handle($request);
+
+foreach ($response->getHeaders() as $name => $values) {
+    foreach ($values as $value) {
+        header(sprintf('%s: %s', $name, $value), false);
+    }
+}
+
+echo $response->getBody();
